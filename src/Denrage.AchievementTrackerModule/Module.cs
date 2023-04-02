@@ -65,50 +65,43 @@ namespace Denrage.AchievementTrackerModule
 
         protected override async Task LoadAsync()
         {
-            _ = Task.Run(async () =>
+            this.achievementOverviewView = () => new AchievementTrackerView(
+                    this.dependencyInjectionContainer.AchievementItemOverviewFactory,
+                    this.dependencyInjectionContainer.AchievementService,
+                    this.dependencyInjectionContainer.TextureService);
+
+            await this.dependencyInjectionContainer.InitializeAsync(this.autoSave, this.limitAchievements);
+            this.dependencyInjectionContainer.AchievementTrackerService.AchievementTracked += this.AchievementTrackerService_AchievementTracked;
+
+            if (this.dependencyInjectionContainer.PersistanceService.Get().ShowTrackWindow)
             {
+                this.InitializeWindow();
+                this.window.Show();
+            }
 
-                this.achievementOverviewView = () => new AchievementTrackerView(
-                        this.dependencyInjectionContainer.AchievementItemOverviewFactory,
-                        this.dependencyInjectionContainer.AchievementService,
-                        this.dependencyInjectionContainer.TextureService);
+            this.blishhudOverlayTab = GameService.Overlay.BlishHudWindow.AddTab(
+                "Achievement Tracker",
+                this.ContentsManager.GetTexture("achievement_icon.png"),
+                this.achievementOverviewView);
 
-                await Task.Delay(TimeSpan.FromSeconds(3));
-                await this.dependencyInjectionContainer.InitializeAsync(this.autoSave, this.limitAchievements);
-                this.dependencyInjectionContainer.AchievementTrackerService.AchievementTracked += this.AchievementTrackerService_AchievementTracked;
+            this.cornerIcon = new CornerIcon()
+            {
+                // TODO: Localize
+                IconName = "Open Achievement Panel",
+                Icon = this.ContentsManager.GetTexture(@"corner_icon_inactive.png"),
+                HoverIcon = this.ContentsManager.GetTexture(@"corner_icon_active.png"),
+                Width = 64,
+                Height = 64,
+            };
 
-                if (this.dependencyInjectionContainer.PersistanceService.Get().ShowTrackWindow)
-                {
-                    this.InitializeWindow();
-                    this.window.Show();
-                }
+            this.cornerIcon.Click += (s, e) =>
+            {
+                this.InitializeWindow();
 
-                this.blishhudOverlayTab = GameService.Overlay.BlishHudWindow.AddTab(
-                    "Achievement Tracker",
-                    this.ContentsManager.GetTexture("achievement_icon.png"),
-                    this.achievementOverviewView);
+                this.window.ToggleWindow();
+            };
 
-                this.cornerIcon = new CornerIcon()
-                {
-                    // TODO: Localize
-                    IconName = "Open Achievement Panel",
-                    Icon = this.ContentsManager.GetTexture(@"corner_icon_inactive.png"),
-                    HoverIcon = this.ContentsManager.GetTexture(@"corner_icon_active.png"),
-                    Width = 64,
-                    Height = 64,
-                };
-
-                this.cornerIcon.Click += (s, e) =>
-                {
-                    this.InitializeWindow();
-
-                    this.window.ToggleWindow();
-                };
-
-                this.dependencyInjectionContainer.PersistanceService.AutoSave += this.SavePersistentInformation;
-            });
-
-            await base.LoadAsync();
+            this.dependencyInjectionContainer.PersistanceService.AutoSave += this.SavePersistentInformation;
         }
 
         private void InitializeWindow()
